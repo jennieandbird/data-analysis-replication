@@ -1,25 +1,24 @@
----
-title: "data-analysis-replication"
-author: "Jennie"
-date: "2024-03-22"
-output: html_document
----
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# **Data Analysis Replication**
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+#### Article:
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Whittaker, B. A., Nolet-Mulholland, L., Nevoit, A., Yun, D., Lambert, C. T., Blunk, S. C., & Guillette, L. M. (2023). Zebra finches have style: Nest morphology is repeatable and associated with experience. *IScience*, *26*(11), 108194. <https://doi.org/10.1016/j.isci.2023.108194>
 
-```{r cars}
-summary(cars)
+#### Introduction:
+
+In this article, the authors looked for individual repeatability in zebra finch nest construction.
+
+```{r echo=FALSE, out.width="300px", fig.cap="Graphical abstract."}
+knitr::include_graphics("https://github.com/jennieandbird/data-analysis-replication/blob/main/images/summary.PNG?raw=true")
 ```
 
-## Including Plots
+#### Data and Analyses:
+
+## Data Analysis & Visualization Replication
 
 You can also embed plots, for example:
 
@@ -28,3 +27,5 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Discussion & Reflection
