@@ -11,17 +11,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #### Article:
 
-Whittaker, B. A., Nolet-Mulholland, L., Nevoit, A., Yun, D., Lambert, C. T., Blunk, S. C., & Guillette, L. M. (2023). Zebra finches have style: Nest morphology is repeatable and associated with experience. *IScience*, *26*(11), 108194. <https://doi.org/10.1016/j.isci.2023.108194>
+Whittaker, B. A., Nolet-Mulholland, L., Nevoit, A., Yun, D., Lambert, C. T., Blunk, S. C., & Guillette, L. M. (2023). Zebra finches have style: Nest morphology is repeatable and associated with experience. *iScience*, *26*(11), 108194. <https://doi.org/10.1016/j.isci.2023.108194>
 
 #### Introduction:
 
-In this article, the authors looked for individual repeatability in zebra finch nest construction.
+In this article, the authors looked for repeatability in zebra finch nest construction. Forty captive zebra finches (20 different-sex pairs) had the opportunity to build four nests out of coconut fiber. In an Experimental group, the birds built five nests out of white string before moving on to building nests from coconut fiber, so they had general experience with nest construction. Birds in the Control group did not get prior practice. The completed nests were photographed from standard distances and angles, and landmarks were added using a digital template. These landmarks were used to characterize nest morphology (dimensions, symmetry, etc.). Other variables (amount of fiber used per nest, time spent building each nest, bird age, body weight, etc.) were also considered. The authors found that birds build nests with distinct repeatable styles, and less experienced birds (Control group) had more variable nest morphology compared to experienced birds (Experimental group). Additionally, experienced builders were more efficient: they used less material to build their nests.
 
 ```{r echo=FALSE, out.width="300px", fig.cap="Graphical abstract."}
 knitr::include_graphics("https://github.com/jennieandbird/data-analysis-replication/blob/main/images/summary.PNG?raw=true")
 ```
 
 #### Data and Analyses:
+
+Subject data included Pair ID, age, and weight. Data on nest-building behavior included the amount of material used (measured in grams) and the amount of time spent building (measured in days). Digital landmarks of nest photos yielded coordinates that were summarized into variables (nest size, nest shape, entrance size, and entrance shape) through Principal Component Analyses (PCAs). A linear mixed model was used to determine whether experience affects the amount of nest material used by birds. Permutation tests compared the morphological differences between nests built by birds in the Experimental and Control groups.
 
 ## Data Analysis & Visualization Replication
 
@@ -33,6 +35,8 @@ knitr::include_graphics("https://github.com/jennieandbird/data-analysis-replicat
 
 [Results:]{.underline} Zebra finches in the Experimental group were found to use less coconut fiber material compared to birds in the Control group. The results section also reports the SE = 0.136, t = -2.835, and *p* = 0.013.
 
+[Replication:]{.underline} Using the model `lmer(data = data, log_Used_Material ~ Experience + Nest_No + Time_Taken + (1|PairID), REML = FALSE)`, there was a significant effect of experience on Used_Material (*p* = 0.0134).
+
 ```{r echo=FALSE, message = FALSE, warning=FALSE}
 # Load packages and the data file.
 library(tidyverse)
@@ -43,44 +47,72 @@ file <- "https://raw.githubusercontent.com/jennieandbird/data-analysis-replicati
 data <- read_csv(file)
 head(data)
 names(data)
+# The conversion from Excel file to CSV added a lot of "NA" to the bottom; remove those.
 data <- data |>  filter(!is.na(PairID))
 # Set the variables as numeric or factors.
 data$PairID <- as.factor(data$PairID)
 data$Experience <- as.factor(data$Experience)
 data$Used_Material <- as.numeric(data$Used_Material)
 data$Nest_No <- as.factor(data$Nest_No)
-# Set up Model1 (we know the authors eventually log-transformed Used_Material, but we need to recreate the steps before that)
+# Set up Model1 (we know the authors eventually log-transformed Used_Material, but I want to see how they decided this needed to be done.)
 model1 <- lmer(data = data, Used_Material ~ Experience + Nest_No + Time_Taken + (1|PairID), REML = FALSE)
-summary(model1)
-# The SE, t, and p of model1's summary do not match the values in the results, so we have more work to do!
 # Check if the data fit the assumptions using the ggResidpanel package:
-resid_panel(model1) # the histogram looks bad
-# make a log version of Used_Material:
+resid_panel(model1) # the histogram looks bad; lots of weight in the center and not normally distributed.
+# Make a log version of Used_Material:
 data$log_Used_Material <- log(data$Used_Material)
-# Try the model again
+# Try the model again using the log_Used_Material.
 model2 <- lmer(data = data, log_Used_Material ~ Experience + Nest_No + Time_Taken + (1|PairID), REML = FALSE)
 # And check again with ggResidpanel:
-resid_panel(model2) # the histogram looks much better now.
-# The values are closer to the results!
+resid_panel(model2) # the histogram looks much better now!
+# The values are closer to the results! Same p-value!
 model_summary <- summary(model2)
 print(model_summary)
 ```
 
 [**Data Visualization**]{.underline}
 
-The article includes a graph showing the effect of experience on use of nest material.
+The article includes a boxplot graph showing the effect of experience on use of nest material. The y-axis displays the amount of used material, and the x-axis is the nest order. Data from the Control group are shown in white boxes, labeled *Experience: No*, and data from the Experimental group are shaded in gray and labeled *Experience: Yes*.
 
 ```{r out.width="400px", fig.cap="Figure 5. Experienced pairs used less coconut fiber to build nests than inexperienced pairs."}
 knitr::include_graphics("https://github.com/jennieandbird/data-analysis-replication/blob/main/images/figure5.PNG?raw=true")
 ```
 
+[Replication:]{.underline}
+
 ```{r echo=FALSE, message = FALSE, warning=FALSE}
 library(ggplot2)
+# remove NA so the graph only shows Nest No 1 to 4, not 1, 2, 3, 4, & NA.
 data_plot <- data |> filter(!is.na(Nest_No))
 plot1 <- ggplot(data = data_plot, aes(x = Nest_No, y = Used_Material, fill = Experience)) + geom_boxplot(na.rm = TRUE) + xlab ("Coconut fiber nest order") + ylab ("Material used (g)") + ylim(10,50) + scale_fill_manual('Experience:', labels = c("No", "Yes"), values = c( "#ffffff","#808080"))+ theme_bw()
 print(plot1)
 ```
 
+#### 2) Nest morphology
+
+[**Descriptive statistics:**]{.underline}
+
+[Results:]{.underline} The coconut-fiber nests averaged 18.3 cm long (SD = 3.4 cm), and 20.3 cm wide (SD = 4.9 cm) using the top-down photographs. The front view photos showed nests with height averaging 11.7 cm (SD = 3.7 cm).
+
+[Replication:]{.underline} Using `summary(data2)`, the average top-down length and width of nests are 18.32 cm and 20.29 cm, and the average height is 11.729 cm. This matches the results from the article. The `sd()` function gives 3.363328, 4.89693 and 3.690065, also matching the results from the article.
+
+```{r}
+# Load other data set
+file2 <- "https://raw.githubusercontent.com/jennieandbird/data-analysis-replication/main/data/data1.csv"
+data2 <- read_csv(file2)
+head(data2)
+names(data2)
+# The conversion from Excel file to CSV added a lot of "NA" to the bottom; remove those.
+data2 <- data2 |>  filter(!is.na(PairID))
+# Use summary to quickly get the averages.
+summary(data2)
+# Use sd() to get the Standard Deviation; remove NA so it doesn't give an error.
+sd(data2$Top.Length, na.rm = TRUE)
+sd(data2$Top.Width, na.rm = TRUE)
+sd(data2$Front.Height, na.rm = TRUE)
+```
+
 ## Discussion & Reflection
 
-Using the Methods and Results section for clues, I was *almost* able to replicate the results of the linear mixed model. The values I was looking for were SE = 0.136, t = -2.835, and *p* = 0.013. I got SE = 0.13775, t = -2.809, and *p* = 0.0134. There may have been another way that data were filtered which I missed.
+Whittaker et al. published data files that were clearly organized and with labels that were easy to understand. Following the methods described in the article, it was plain to see which variable corresponded to, for example, nest length measured from top-down photographs (**Top.Length**) or height measured from front view photos (**Front.Height**). I was able to replicate an example of descriptive statistics and data visualization, but did not have as much luck with my chosen example of inferential statistics.
+
+Using the Methods and Results sections for guidance, I was *almost* able to replicate the results of the linear mixed model. I got the same p-value, but was looking for SE = 0.136 and t = -2.835, but I got SE = 0.138 and t = -2.809. Earlier in the article while listing methods for the PCA, the authors describe how missing values were estimated using the package `{missMDA}`. Maybe if my linear mixed model included some missing values, that could explain why the results were different, but only slightly. Also, there may have been another way that data were filtered which I didn't replicate correctly. (Whittaker et al. published their code in addition to the data files, so I can figure out what I was missing after turning in this assignment.)
