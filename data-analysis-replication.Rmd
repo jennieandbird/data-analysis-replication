@@ -1,3 +1,8 @@
+---
+title: "Data Analysis Replication"
+output: html_document
+---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -20,12 +25,62 @@ knitr::include_graphics("https://github.com/jennieandbird/data-analysis-replicat
 
 ## Data Analysis & Visualization Replication
 
-You can also embed plots, for example:
+#### 1) Effect of experience on use of nest material
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+[**Inferential statistical analysis:**]{.underline}
+
+[Methods:]{.underline} The authors described using a linear mixed model from the *R* package `{lme4}` to determine the effect of experience on use of nest material. The response variable was the amount (g) of coconut fiber used per nest, and explanatory variables were prior experience building nests with string, the building attempt number, and the days spent building the nest. The pair ID was included as a random factor because the measures were repeated for each pair. To make sure the model fit the assumptions, they used the `{ggResidpanel}` package. They log-transformed the amount of coconut fiber to fit the assumption of normality.
+
+[Results:]{.underline} Zebra finches in the Experimental group were found to use less coconut fiber material compared to birds in the Control group. The results section also reports the SE = 0.136, t = -2.835, and *p* = 0.013.
+
+```{r echo=FALSE, message = FALSE, warning=FALSE}
+# Load packages and the data file.
+library(tidyverse)
+library(lme4)
+library(ggResidpanel)
+library(lmerTest)
+file <- "https://raw.githubusercontent.com/jennieandbird/data-analysis-replication/main/data/data2.csv"
+data <- read_csv(file)
+head(data)
+names(data)
+data <- data |>  filter(!is.na(PairID))
+# Set the variables as numeric or factors.
+data$PairID <- as.factor(data$PairID)
+data$Experience <- as.factor(data$Experience)
+data$Used_Material <- as.numeric(data$Used_Material)
+data$Nest_No <- as.factor(data$Nest_No)
+# Set up Model1 (we know the authors eventually log-transformed Used_Material, but we need to recreate the steps before that)
+model1 <- lmer(data = data, Used_Material ~ Experience + Nest_No + Time_Taken + (1|PairID), REML = FALSE)
+summary(model1)
+# The SE, t, and p of model1's summary do not match the values in the results, so we have more work to do!
+# Check if the data fit the assumptions using the ggResidpanel package:
+resid_panel(model1) # the histogram looks bad
+# make a log version of Used_Material:
+data$log_Used_Material <- log(data$Used_Material)
+# Try the model again
+model2 <- lmer(data = data, log_Used_Material ~ Experience + Nest_No + Time_Taken + (1|PairID), REML = FALSE)
+# And check again with ggResidpanel:
+resid_panel(model2) # the histogram looks much better now.
+# The values are closer to the results!
+model_summary <- summary(model2)
+print(model_summary)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+[**Data Visualization**]{.underline}
+
+The article includes a graph showing the effect of experience on use of nest material.
+
+```{r out.width="400px", fig.cap="Figure 5. Experienced pairs used less coconut fiber to build nests than inexperienced pairs."}
+knitr::include_graphics("https://github.com/jennieandbird/data-analysis-replication/blob/main/images/figure5.PNG?raw=true")
+```
+
+```{r echo=FALSE, message = FALSE, warning=FALSE}
+library(ggplot2)
+data_plot <- data |> filter(!is.na(Nest_No))
+plot1 <- ggplot(data = data_plot, aes(x = Nest_No, y = Used_Material, fill = Experience)) + geom_boxplot(na.rm = TRUE) + xlab ("Coconut fiber nest order") + ylab ("Material used (g)") + ylim(10,50) + scale_fill_manual('Experience:', labels = c("No", "Yes"), values = c( "#ffffff","#808080"))+ theme_bw()
+print(plot1)
+```
 
 ## Discussion & Reflection
+
+Using the Methods and Results section for clues, I was *almost* able to replicate the results of the linear mixed model. The values I was looking for were SE = 0.136, t = -2.835, and *p* = 0.013. I got SE = 0.13775, t = -2.809, and *p* = 0.0134. There may have been another way that data were filtered which I missed.
